@@ -1,0 +1,708 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<!--
+  ABL Matchday — лендинг для запуска на всю лигу.
+  ТЗ: ia/landing.md. Макет: Claude Design, проект 61753240…, landing/index.html (React-прототип).
+  Здесь — та же композиция без React и Babel: статичная разметка + немного JS (стек демо — без фреймворков, первый экран < 2 с на 4G).
+  Токены — из tokens/*.css дизайн-системы (Semantic-переменные), компоненты повторяют Button / Banner / Card / Tabs / ListItem / StatTile / BottomSheet / Toast.
+-->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>ABL Matchday — официальное приложение ABL</title>
+<meta name="description" content="Твоя следующая игра, расписание тура в Telegram и статистика. Бесплатно, iPhone и Android">
+<meta property="og:type" content="website">
+<meta property="og:title" content="ABL Matchday — официальное приложение ABL">
+<meta property="og:description" content="Твоя следующая игра, расписание тура в Telegram и статистика. Бесплатно, iPhone и Android">
+<meta property="og:url" content="https://rnchsbr.github.io/abl-demo/landing/">
+<meta property="og:image" content="https://rnchsbr.github.io/abl-demo/icons/icon-512.png">
+<meta name="theme-color" content="#111111">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="ABL">
+<link rel="manifest" href="../manifest.webmanifest">
+<link rel="apple-touch-icon" href="../icons/icon-180.png">
+<link rel="icon" href="../icons/round_mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Tektur:wght@600;700;800&display=swap" rel="stylesheet">
+<script>
+  // Запущено с главного экрана — лендинг не нужен, сразу в приложение (ТЗ §1, маршрутизация).
+  if (matchMedia("(display-mode: standalone)").matches || navigator.standalone) location.replace("../");
+</script>
+<style>
+/* ---------- Токены ДС (tokens/colors.css, typography.css, spacing.css) ---------- */
+:root{
+--accent-300:#F4777B;--accent-500:#ED1C24;--accent-700:#B5121A;
+--gray-00:#FFFFFF;--gray-100:#BDBDBD;--gray-200:#A3A3A3;--gray-300:#6E6E6E;--gray-500:#2C2C2C;--gray-700:#232323;--gray-900:#1A1A1A;--gray-950:#111111;
+--warning-500:#F5D04C;--error-500:#F5A524;--info-500:#3B9EFF;--success-500:#2FBF71;
+--surface-default:var(--gray-950);--surface-subtle:var(--gray-900);--surface-raised:var(--gray-700);--surface-pressed:var(--gray-500);
+--surface-action-primary:var(--accent-500);--surface-action-primary-hover:var(--accent-700);--surface-action-secondary:var(--gray-700);
+--text-default:var(--gray-00);--text-muted:var(--gray-200);--text-faint:var(--gray-300);--text-on-action:var(--gray-00);
+--border-default:var(--gray-500);--border-strong:var(--gray-300);--border-focus:var(--gray-00);
+--bg-warning:var(--warning-500);--bg-info:var(--info-500);--bg-success:var(--success-500);
+--font-display:"Tektur",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+--font-sans:"Inter",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
+--space-1:4px;--space-2:8px;--space-3:12px;--space-4:16px;--space-6:24px;--space-8:32px;--space-12:48px;--space-16:64px;
+--radius-sm:4px;--radius-md:8px;--radius-lg:16px;--radius-full:999px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--surface-default);color:var(--text-default);font-family:var(--font-sans);-webkit-font-smoothing:antialiased;-webkit-text-size-adjust:100%}
+a{color:var(--text-default);text-decoration:underline;text-decoration-color:var(--border-strong);text-underline-offset:3px}
+a:hover{color:var(--gray-100)}
+:focus-visible{outline:2px solid var(--border-focus);outline-offset:2px}
+[hidden]{display:none!important}
+
+/* ---------- Типографика ---------- */
+.eyebrow{font:600 12px/1.3 var(--font-sans);letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted)}
+h1{font:800 clamp(32px,8.6vw,56px)/1.05 var(--font-display);letter-spacing:-.01em;margin:0;text-wrap:balance}
+h2{font:700 clamp(24px,6.4vw,32px)/1.15 var(--font-display);margin:0;text-wrap:balance}
+h3{font:600 20px/1.2 var(--font-display);margin:0}
+.body{font:400 16px/1.5 var(--font-sans);color:var(--text-muted);margin:0;text-wrap:pretty}
+.small{font:400 14px/1.5 var(--font-sans);color:var(--text-muted);margin:0}
+
+/* ---------- Компоненты (повторяют UI-кит) ---------- */
+.btn{position:relative;height:48px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:0 24px;border:0;border-radius:var(--radius-md);font:700 18px/1.2 var(--font-display);white-space:nowrap;cursor:pointer;text-decoration:none;transition:background-color 120ms ease;-webkit-tap-highlight-color:transparent}
+.btn-primary{background:var(--surface-action-primary);color:var(--text-on-action)}
+.btn-primary:active,.btn-primary:hover{background:var(--surface-action-primary-hover);color:var(--text-on-action)}
+.btn-secondary{background:var(--surface-action-secondary);color:var(--text-default);box-shadow:inset 0 0 0 1px var(--border-strong)}
+.btn-secondary:active{background:var(--surface-pressed)}
+.btn-ghost{background:transparent;color:var(--text-default)}
+.btn-ghost:active,.btn-ghost:hover{background:var(--surface-raised);color:var(--text-default)}
+.btn-full{width:100%}
+.iconbtn{width:48px;height:48px;flex-shrink:0;border:0;border-radius:var(--radius-md);background:var(--surface-raised);color:var(--text-default);display:inline-flex;align-items:center;justify-content:center;cursor:pointer}
+.ico{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;flex-shrink:0}
+.ico-16{width:16px;height:16px}
+
+.banner{border-radius:var(--radius-md);background:var(--surface-subtle);box-shadow:inset 0 0 0 1px var(--border-default);display:flex;gap:12px;padding:16px}
+.banner::before{content:"";width:4px;border-radius:4px;background:var(--bg-warning);flex-shrink:0}
+.banner.info::before{background:var(--bg-info)}
+.banner-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.banner-t{font:500 14px/1.5 var(--font-sans);color:var(--text-default)}
+.banner-d{font:400 14px/1.5 var(--font-sans);color:var(--text-muted)}
+.banner .btn{margin-top:4px}
+
+.card{border-radius:var(--radius-lg);background:var(--surface-subtle);display:flex;flex-direction:column;gap:8px;padding:24px}
+.card-title{font:600 18px/1.2 var(--font-display)}
+.card-meta{font:400 14px/1.5 var(--font-sans);color:var(--text-muted)}
+
+.tabs{display:flex;gap:4px;padding:4px;border-radius:var(--radius-md);background:var(--surface-subtle);box-shadow:inset 0 0 0 1px var(--border-default)}
+.tab{flex:1;min-width:0;height:48px;border:0;border-radius:var(--radius-sm);padding:0 12px;background:transparent;color:var(--text-muted);font:400 14px/1.5 var(--font-sans);cursor:pointer}
+.tab[aria-selected="true"]{background:var(--surface-raised);color:var(--text-default);font-weight:500}
+
+.li{min-height:48px;display:flex;gap:12px;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border-default);background:var(--surface-default)}
+.li-time{width:64px;flex-shrink:0;font:600 14px var(--font-display);font-variant-numeric:tabular-nums}
+.li-b{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.li-t{font:400 16px/1.5 var(--font-sans)}
+.li-s{font:400 14px/1.5 var(--font-sans);color:var(--text-muted)}
+.chev{width:24px;height:24px;color:var(--text-faint);flex-shrink:0}
+
+.stat{display:flex;flex-direction:column;gap:4px;min-width:0}
+.stat-v{font:800 32px/1.15 var(--font-display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.stat-l{font:400 12px/1.3 var(--font-sans);color:var(--text-muted)}
+
+.avatar{width:40px;height:40px;border-radius:var(--radius-full);background:var(--surface-raised);box-shadow:inset 0 0 0 1px var(--border-default);display:flex;align-items:center;justify-content:center;flex-shrink:0;font:600 14px/1 var(--font-display)}
+.avatar.lg{width:64px;height:64px;font-size:20px;font-weight:700}
+.meta{display:flex;gap:8px;align-items:center;font:400 14px/1.5 var(--font-sans)}
+
+/* Step — нет в UI-ките (ТЗ §7), локальный */
+.steps{display:flex;flex-direction:column;gap:20px;margin:0;padding:0;list-style:none}
+.step{display:flex;gap:16px;align-items:flex-start}
+.step-n{width:40px;height:40px;border-radius:var(--radius-full);background:var(--surface-raised);box-shadow:inset 0 0 0 1px var(--border-default);display:flex;align-items:center;justify-content:center;flex-shrink:0;font:800 18px var(--font-display)}
+.step-b{display:flex;flex-direction:column;gap:4px;padding-top:8px;min-width:0}
+.step-t{font:600 18px/1.2 var(--font-display)}
+.step-d{font:400 14px/1.5 var(--font-sans);color:var(--text-muted)}
+
+/* Accordion — нет в UI-ките (ТЗ §7), на <details>: работает без JS и с клавиатуры */
+.faq{border-top:1px solid var(--border-default)}
+.faq details{border-bottom:1px solid var(--border-default)}
+.faq summary{min-height:56px;display:flex;gap:12px;align-items:center;padding:12px 0;cursor:pointer;list-style:none;font:500 16px/1.5 var(--font-sans)}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary span{flex:1}
+.faq summary .chev{transform:rotate(90deg);transition:transform 150ms ease}
+.faq details[open] summary .chev{transform:rotate(-90deg)}
+.faq p{margin:0;padding:0 36px 16px 0;font:400 14px/1.5 var(--font-sans);color:var(--text-muted)}
+
+/* ---------- Раскладка ---------- */
+.in{max-width:720px;margin:0 auto;padding:0 16px;display:flex;flex-direction:column;gap:24px}
+.head{max-width:1120px;margin:0 auto;padding:12px 16px 0;display:flex;justify-content:space-between;align-items:center}
+.head img{width:88px;height:88px;margin:-12px 0}
+.hero{padding:8px 0 48px;overflow:hidden}
+.hero-in{max-width:1120px;margin:0 auto;padding:0 16px;display:flex;flex-direction:column;gap:32px}
+.hero-text{display:flex;flex-direction:column;gap:16px;max-width:560px}
+.hero-phone{display:flex;justify-content:center}
+.ctas{display:flex;flex-wrap:wrap;gap:8px}
+.ctas .btn-primary{flex:1 1 auto}
+.sec{padding:56px 0}
+.sec.quiet{background:var(--surface-subtle)}
+.ba{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);column-gap:16px}
+.ba>.eyebrow{padding-bottom:8px;border-bottom:1px solid var(--border-strong)}
+.ba-c{font:400 15px/1.45 var(--font-sans);padding:14px 0;border-bottom:1px solid var(--border-default)}
+.ba-c.was{color:var(--text-muted)}
+.moments{display:flex;flex-direction:column;gap:32px}
+.moment{display:flex;flex-direction:column;gap:20px}
+.moment .card{gap:16px;flex:1}
+.facts{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:12px}
+.facts li{display:flex;gap:10px;font:400 14px/1.5 var(--font-sans)}
+.facts li::before{content:"";width:4px;height:4px;border-radius:4px;background:var(--text-faint);margin-top:9px;flex-shrink:0}
+.shot{display:flex;justify-content:center}
+.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 16px}
+.games .li{background:transparent;padding:12px 0}
+.two{display:flex;flex-direction:column;gap:12px}
+.two .card{gap:12px}
+.two .row{font:400 15px/1.5 var(--font-sans);padding-bottom:10px;border-bottom:1px solid var(--border-default)}
+.foot{padding:40px 0 48px;border-top:1px solid var(--border-default)}
+.foot nav{display:flex;flex-wrap:wrap;gap:8px 20px;font:400 14px var(--font-sans)}
+.foot-brand{display:flex;gap:12px;align-items:center}
+.foot-brand img{width:48px;height:48px;flex-shrink:0}
+.wide-btn{width:100%}
+
+/* Рамка телефона с макетом экрана (DeviceFrame — нет в UI-ките, ТЗ §7). Внутри — экран 375×812, масштабируется. */
+.device{position:relative;flex-shrink:0;pointer-events:none;overflow:hidden;border-radius:16px}
+.device-in{position:absolute;left:0;top:0;width:375px;height:812px;transform-origin:top left;background:var(--surface-default);border-radius:32px;overflow:hidden;display:flex;flex-direction:column;box-shadow:0 0 0 1px var(--border-default),0 30px 80px rgba(0,0,0,.5)}
+.sb{height:44px;display:flex;align-items:center;justify-content:space-between;padding:0 28px;font:600 15px var(--font-sans);flex-shrink:0}
+.appbar{height:56px;display:flex;align-items:center;gap:8px;padding:8px 16px;flex-shrink:0}
+.appbar-t{flex:1;font:700 20px/1.2 var(--font-display)}
+.appbar-m{font:400 12px var(--font-sans);color:var(--text-muted)}
+.appbar.nested{padding:4px}
+.appbar.nested .appbar-t{text-align:center;font:600 18px/1.2 var(--font-display)}
+.scr{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.navbar{height:64px;display:flex;border-top:1px solid var(--border-default);background:var(--surface-default);flex-shrink:0}
+.navbar span{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;font:500 11px var(--font-sans);color:var(--text-faint)}
+.navbar span.on{color:var(--text-default)}
+.sh{padding:16px 16px 8px;font:700 20px/1.2 var(--font-display)}
+.sh.group{padding:16px 16px 8px;font:600 12px/1.3 var(--font-sans);letter-spacing:.05em;text-transform:uppercase;color:var(--text-muted)}
+.matchup{display:flex;flex-direction:column;gap:12px;padding:16px 0;align-items:center}
+.matchup-row{display:flex;gap:16px;align-items:flex-start;align-self:stretch}
+.mt{flex:1;display:flex;flex-direction:column;gap:8px;align-items:center;text-align:center;font:500 14px/1.5 var(--font-sans)}
+.mt small{font:400 12px/1.5 var(--font-sans);color:var(--text-muted)}
+.vs{font:600 14px var(--font-display);color:var(--text-muted);padding-top:24px;text-transform:uppercase}
+.map{height:120px;border-radius:var(--radius-md);background:var(--surface-raised);display:flex;align-items:center;justify-content:center;font:400 12px var(--font-sans);color:var(--text-muted)}
+
+.tg{width:300px;max-width:100%;display:flex;flex-direction:column;gap:12px}
+.tg-msg{border-radius:var(--radius-lg);background:var(--surface-raised);box-shadow:inset 0 0 0 1px var(--border-default);padding:16px;display:flex;flex-direction:column;gap:6px}
+.story{width:240px;height:426px;border-radius:20px;background:var(--gray-950);box-shadow:inset 0 0 0 1px var(--border-default);padding:20px;display:flex;flex-direction:column;justify-content:space-between;overflow:hidden}
+.story-score{font:800 36px/1 var(--font-display);font-variant-numeric:tabular-nums;white-space:nowrap}
+.story-stats{display:grid;grid-template-columns:repeat(3,1fr)}
+.story-stats .stat-v{font-size:24px}
+
+/* Шторка установки (BottomSheet) */
+.scrim{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:40;display:flex;align-items:flex-end;justify-content:center}
+.sheet{width:100%;max-width:480px;max-height:90vh;overflow:auto;border-radius:16px 16px 0 0;background:var(--surface-subtle);border:1px solid var(--border-default);border-bottom:0;display:flex;flex-direction:column;gap:16px;padding:8px 0 calc(32px + env(safe-area-inset-bottom))}
+.sheet-grip{width:32px;height:4px;border-radius:4px;background:var(--gray-300);align-self:center}
+.sheet-h{display:flex;gap:12px;align-items:center;padding:0 16px;min-height:48px}
+.sheet-h span{flex:1;font:700 18px/1.2 var(--font-display)}
+.sheet-b{padding:0 16px}
+.guide{display:flex;flex-direction:column;gap:20px}
+.toast{position:fixed;left:16px;right:16px;bottom:24px;z-index:50;display:flex;justify-content:center;pointer-events:none}
+.toast div{width:343px;max-width:100%;min-height:48px;border-radius:var(--radius-md);background:var(--surface-raised);box-shadow:inset 0 0 0 1px var(--border-default);display:flex;gap:12px;align-items:center;padding:12px 16px;font:500 14px/1.3 var(--font-sans)}
+.toast div::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--bg-success);flex-shrink:0}
+
+@media (min-width:720px){
+ .stats{grid-template-columns:repeat(4,minmax(0,1fr))}
+ .two{flex-direction:row}
+ .moment{flex-direction:row;align-items:center;gap:32px}
+ .moment.flip{flex-direction:row-reverse}
+ .shot{flex:0 0 300px}
+ .wide-btn{width:fit-content}
+}
+@media (min-width:960px){
+ .hero{padding:24px 0 72px}
+ .hero-in{flex-direction:row;align-items:center;justify-content:space-between}
+ .hero-text{gap:20px}
+ .scrim{align-items:center}
+ .sheet{border-radius:16px;border-bottom:1px solid var(--border-default)}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+
+<!-- Иконки (Lucide, линия 1.6 — как в UI-ките) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-share" viewBox="0 0 24 24"><path d="M12 3v12M8 7l4-4 4 4M5 12v8h14v-8"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 5-5.5 9.6-7.4 11.2a1 1 0 0 1-1.2 0C9.5 19.6 4 15 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-shirt" viewBox="0 0 24 24"><path d="M20.4 3.5L16 2a4 4 0 0 1-8 0L3.6 3.5a2 2 0 0 0-1.3 2.2l.6 3.5a1 1 0 0 0 1 .8H6v10a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V10h2.1a1 1 0 0 0 1-.8l.6-3.5a2 2 0 0 0-1.3-2.2z"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24"><path d="M4 5h16M4 12h16M4 19h16"/><circle cx="14" cy="5" r="2"/><circle cx="8" cy="12" r="2"/><circle cx="16" cy="19" r="2"/></symbol>
+  <symbol id="i-games" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="1.5"/><path d="M3.5 9.5h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-league" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></symbol>
+  <symbol id="i-me" viewBox="0 0 24 24"><path d="M5 20V10M10 20V6M15 20v-8M20 20V4"/></symbol>
+</svg>
+
+<div id="logged" class="in" style="padding-top:12px" hidden>
+  <div class="banner info"><div class="banner-b"><span class="banner-t">Ты уже вошёл</span><a class="btn btn-secondary btn-full" href="../#/games">Мои игры</a></div></div>
+</div>
+
+<!-- 0. Шапка -->
+<header class="head">
+  <img src="../icons/main_logo.svg" alt="ABL">
+  <a class="btn btn-ghost" href="../" style="padding:0 8px" data-ev="login_click">Войти</a>
+</header>
+
+<main>
+<!-- 1. Hero -->
+<section class="hero">
+  <div class="hero-in">
+    <div class="hero-text">
+      <div id="inapp" class="banner" hidden>
+        <div class="banner-b">
+          <span class="banner-t" id="inapp-t">Из Telegram приложение не установить</span>
+          <span class="banner-d" id="inapp-d">Открой эту страницу в Safari: ⋯ → «Открыть в браузере»</span>
+          <button class="btn btn-secondary btn-full" type="button" data-copy>Скопировать ссылку</button>
+        </div>
+      </div>
+      <span class="eyebrow">Официальное приложение ABL</span>
+      <h1>Твоя следующая игра — уже на экране</h1>
+      <p class="body" id="hero-sub" style="font-size:17px">Время, зал и соперник по всем твоим командам. Расписание тура — в Telegram, как только лига его утвердит. После игры — протокол, статистика и карточка для Stories</p>
+      <div class="ctas">
+        <a class="btn btn-primary" href="#install" data-install>Установить приложение</a>
+        <a class="btn btn-ghost" href="../" id="hero-browser" data-ev="open_in_browser_click">Открыть в браузере</a>
+      </div>
+      <span class="small" style="font-size:13px">Бесплатно · Без рекламы · iPhone и Android</span>
+    </div>
+
+    <div class="hero-phone">
+      <div class="device" data-scale="0.62" role="img" aria-label="Экран «Мои игры»: ближайшая игра в четверг в 21:30, зал Шелепиха, форма светлая">
+        <div class="device-in">
+          <div class="sb"><span>9:41</span><span>●●●</span></div>
+          <div class="appbar"><span class="appbar-t">Мои игры</span><span class="appbar-m">обновлено 14:30</span><span class="iconbtn"><svg class="ico"><use href="#i-settings"/></svg></span></div>
+          <div class="scr">
+            <div style="display:flex;flex-direction:column;gap:16px;padding:8px 16px 0">
+              <div class="card" style="gap:12px">
+                <span class="eyebrow">Ближайшая игра · KB Magic · HIGH</span>
+                <span class="card-title">Чт, 13 ноября · 21:30</span>
+                <div style="display:flex;gap:12px;align-items:center"><span class="avatar">LL</span><span style="font:500 14px var(--font-sans)">vs Los Lobos Locos</span></div>
+                <div class="meta"><svg class="ico ico-16"><use href="#i-pin"/></svg>Шелепиха, зал 2</div>
+                <div class="meta"><svg class="ico ico-16"><use href="#i-shirt"/></svg>Форма светлая</div>
+                <span class="btn btn-secondary btn-full">Как добраться</span>
+              </div>
+            </div>
+            <div class="sh">Дальше</div>
+            <div class="sh group">Сб, 15 ноября</div>
+            <div class="li"><span class="li-time">12:00</span><span class="li-b"><span class="li-t">vs Восход Альфа</span><span class="li-s">Каскад · LOVE · Шелепиха</span></span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+            <div class="li"><span class="li-time">13:30</span><span class="li-b"><span class="li-t">vs Вихрь</span><span class="li-s">KB Magic · HIGH · Шелепиха</span></span><svg class="ico chev"><use href="#i-chev"/></svg></div>
+          </div>
+          <div class="navbar"><span class="on"><svg class="ico"><use href="#i-games"/></svg>Игры</span><span><svg class="ico"><use href="#i-league"/></svg>Лига</span><span><svg class="ico"><use href="#i-me"/></svg>Я</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Вариант ?from=captain: «Скинь ссылку команде» (ТЗ §6.2) -->
+<section class="sec quiet" id="captain" hidden>
+  <div class="in">
+    <h2>Скинь ссылку команде</h2>
+    <div class="card">
+      <span class="eyebrow">Готовый текст для чата</span>
+      <span class="card-meta" id="share-text-view"></span>
+      <button class="btn btn-secondary btn-full" type="button" data-share>Поделиться</button>
+    </div>
+  </div>
+</section>
+
+<!-- 2. Было / стало -->
+<section class="sec" id="before-after">
+  <div class="in">
+    <h2>Хватит собирать игровой день по кусочкам</h2>
+    <div class="ba">
+      <span class="eyebrow">Сейчас</span><span class="eyebrow">С приложением</span>
+      <span class="ba-c was">Расписание — на сайте лиги</span><span class="ba-c">Ближайшая игра — первым экраном</span>
+      <span class="ba-c was">Расписание тура — в чате, если успел прочитать</span><span class="ba-c">Расписание тура — отдельным сообщением в Telegram</span>
+      <span class="ba-c was">Зал — ищешь в Яндекс Картах</span><span class="ba-c">«Как добраться» — одно касание</span>
+      <span class="ba-c was">Трансляция — где-то в VK</span><span class="ba-c">Ссылка на трансляцию — в матче</span>
+    </div>
+  </div>
+</section>
+
+<!-- 3. Три момента игровой недели -->
+<section class="sec" id="moments">
+  <div class="in">
+    <h2>Всё, что нужно до игры и после</h2>
+    <div class="moments">
+
+      <div class="moment">
+        <div class="card">
+          <span class="eyebrow">Накануне</span>
+          <h3>Ближайшая игра — без поиска</h3>
+          <ul class="facts">
+            <li>Игры всех твоих команд в одном списке, у каждой — подпись команды</li>
+            <li>Время, зал, соперник и цвет формы</li>
+            <li>«Как добраться» — маршрут в Яндекс Картах одним касанием</li>
+          </ul>
+        </div>
+        <div class="shot">
+          <div class="device" data-scale="0.5" data-height="640" role="img" aria-label="Экран игры: соперник, время, зал и форма">
+            <div class="device-in">
+              <div class="sb"><span>9:41</span><span>●●●</span></div>
+              <div class="appbar nested"><span class="iconbtn"><svg class="ico"><use href="#i-back"/></svg></span><span class="appbar-t">Игра</span><span class="iconbtn"><svg class="ico"><use href="#i-share"/></svg></span></div>
+              <div class="scr" style="gap:16px;padding:8px 16px 0">
+                <div class="matchup"><span class="eyebrow">HIGH · 7 тур</span>
+                  <div class="matchup-row">
+                    <div class="mt"><span class="avatar lg">KM</span>KB Magic<small>3 место · 5–1</small></div>
+                    <span class="vs">vs</span>
+                    <div class="mt"><span class="avatar lg">LL</span>Los Lobos Locos<small>5 место · 3–3</small></div>
+                  </div>
+                </div>
+                <div class="card"><span class="eyebrow">Когда</span><span class="card-title">Чт, 13 ноября · 21:30</span><span class="card-meta">Сбор за 30 минут, в 21:00</span></div>
+                <div class="card"><span class="eyebrow">Где</span><span class="card-title">Шелепиха, зал 2</span><span class="card-meta">Москва, 2-я Магистральная ул., 16А</span><div class="map">Карта</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="moment flip">
+        <div class="card">
+          <span class="eyebrow">Когда лига утвердила расписание</span>
+          <h3>Расписание тура не потеряется среди мемов</h3>
+          <ul class="facts">
+            <li>Твои игры тура приходят в Telegram — отдельно от всего остального</li>
+            <li>После утверждения время и зал не меняются — можно планировать неделю</li>
+            <li>Игры сами появятся в календаре телефона, с напоминанием за 2 часа</li>
+            <li>Карточка игры открывается даже в подвале без связи</li>
+          </ul>
+        </div>
+        <div class="shot">
+          <div class="tg" role="img" aria-label="Сообщение в Telegram: расписание тура утверждено, игры двух команд игрока">
+            <div class="tg-msg">
+              <span class="eyebrow" style="font-size:11px">Telegram · ABL Matchday</span>
+              <span style="font:500 15px/1.4 var(--font-sans)">Расписание утверждено: KB Magic — Los Lobos Locos</span>
+              <span class="small">Чт, 13 ноября, 21:30. Шелепиха, зал 2. Форма светлая</span>
+            </div>
+            <div class="tg-msg">
+              <span class="eyebrow" style="font-size:11px">Telegram · ABL Matchday</span>
+              <span style="font:500 15px/1.4 var(--font-sans)">Расписание утверждено: Каскад — Восход Альфа</span>
+              <span class="small">Сб, 15 ноября, 12:00. Шелепиха</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="moment">
+        <div class="card">
+          <span class="eyebrow">После игры</span>
+          <h3>Твоя игра не пройдёт бесследно</h3>
+          <ul class="facts">
+            <li>Протокол, счёт по четвертям и график матча</li>
+            <li>Твоя статистика, место в рейтинге дивизиона и медали — бесплатно навсегда</li>
+            <li>Карточка для Stories в стиле лиги за два касания</li>
+          </ul>
+        </div>
+        <div class="shot">
+          <div class="story" role="img" aria-label="Карточка для Stories: KB Magic 91 — 76 Los Lobos Locos, 18 очков">
+            <img src="../icons/main_logo.svg" alt="" width="56" height="56">
+            <div style="display:flex;flex-direction:column;gap:12px;align-items:center">
+              <span class="eyebrow">HIGH · 3 тур · Финал</span>
+              <div style="display:flex;align-items:center;gap:10px"><span class="avatar">KM</span><span class="story-score">91<span style="color:var(--text-muted)"> : 76</span></span><span class="avatar">LL</span></div>
+              <span class="small" style="font-size:13px;text-align:center">KB Magic — Los Lobos Locos</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px">
+              <span class="eyebrow">#18 Вячеслав Д.</span>
+              <div class="story-stats">
+                <div class="stat"><span class="stat-v">18</span><span class="stat-l">очков</span></div>
+                <div class="stat"><span class="stat-v">5</span><span class="stat-l">подборов</span></div>
+                <div class="stat"><span class="stat-v">35</span><span class="stat-l">минут</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- 9 (вариант ?from=story — поднимается сюда, ТЗ §6.2). Перемещается скриптом. -->
+<div id="no-team-story-slot"></div>
+
+<!-- 4. Настоящие данные лиги -->
+<section class="sec quiet" id="data">
+  <div class="in">
+    <h2>Это не макет. Это ABL</h2>
+    <div class="stats">
+      <div class="stat"><span class="stat-v">360+</span><span class="stat-l">команд</span></div>
+      <div class="stat"><span class="stat-v">20+</span><span class="stat-l">дивизионов</span></div>
+      <div class="stat"><span class="stat-v">6000</span><span class="stat-l">игроков</span></div>
+      <div class="stat"><span class="stat-v">с 2017</span><span class="stat-l">года в Москве</span></div>
+    </div>
+    <p class="small">Данные берутся из MTGame, где секретари ведут протоколы. Ничего вводить не нужно. Обновление — каждые 30 минут<span data-updated></span></p>
+    <div class="games" id="games" hidden>
+      <span class="eyebrow" style="display:block;margin-bottom:4px">Ближайшие игры лиги</span>
+      <div id="games-list"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 5. Как начать -->
+<section class="sec" id="start">
+  <div class="in">
+    <h2>Минута — и готово</h2>
+    <!-- Шаги 2–3 зависят от готовности входа по телефону (F01). Переключатель — LOGIN_BY_PHONE в скрипте ниже. -->
+    <ol class="steps">
+      <li class="step"><span class="step-n">1</span><span class="step-b"><span class="step-t">Установи</span><span class="step-d">На главный экран, как обычное приложение</span></span></li>
+      <li class="step"><span class="step-n">2</span><span class="step-b"><span class="step-t" id="s2-t">Войди</span><span class="step-d" id="s2-d">Через Telegram или по номеру телефона. Пароль от MTGame не нужен</span></span></li>
+      <li class="step"><span class="step-n">3</span><span class="step-b"><span class="step-t" id="s3-t">Найди себя и включи уведомления</span><span class="step-d" id="s3-d">По фамилии — твои команды подтянутся сами. Лишнюю можно убрать</span></span></li>
+    </ol>
+    <a class="btn btn-primary wide-btn" href="#install" data-install>Установить приложение</a>
+  </div>
+</section>
+
+<!-- 6. Установка на телефон. Тот же текст — в шторке (клон этого блока) -->
+<section class="sec" id="install">
+  <div class="in">
+    <h2>Установка на телефон</h2>
+    <div class="guide" id="guide">
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" type="button" aria-selected="true" data-tab="ios">iPhone</button>
+        <button class="tab" role="tab" type="button" aria-selected="false" data-tab="android">Android</button>
+      </div>
+      <div data-pane="ios">
+        <div class="banner" data-ios-other hidden style="margin-bottom:20px"><div class="banner-b"><span class="banner-t">На iPhone поставить можно только из Safari</span><span class="banner-d">Скопируй ссылку и открой её в Safari</span><button class="btn btn-secondary btn-full" type="button" data-copy>Скопировать ссылку</button></div></div>
+        <ol class="steps">
+          <li class="step"><span class="step-n">1</span><span class="step-b"><span class="step-t">Нажми «Поделиться» внизу экрана</span><span class="step-d" style="display:inline-flex;align-items:center;gap:6px">Иконка <svg class="ico" style="width:18px;height:18px;color:var(--text-default)"><use href="#i-share"/></svg> в панели Safari</span></span></li>
+          <li class="step"><span class="step-n">2</span><span class="step-b"><span class="step-t">Выбери «На экран „Домой“»</span><span class="step-d">Пролистай меню вниз, если пункта не видно</span></span></li>
+          <li class="step"><span class="step-n">3</span><span class="step-b"><span class="step-t">Нажми «Добавить»</span><span class="step-d">На главном экране появится иконка ABL</span></span></li>
+        </ol>
+        <p class="small" style="margin-top:20px">Нужен Safari и iOS 16.4 или новее. Не получается? <a href="../">Открой приложение в браузере</a> — всё работает и так.</p>
+      </div>
+      <div data-pane="android" hidden>
+        <ol class="steps">
+          <li class="step"><span class="step-n">1</span><span class="step-b"><span class="step-t">Нажми «Установить» в появившемся окне</span><span class="step-d">Если окна нет — меню ⋮ → «Установить приложение»</span></span></li>
+          <li class="step"><span class="step-n">2</span><span class="step-b"><span class="step-t">Подтверди</span><span class="step-d">Иконка ABL появится на главном экране</span></span></li>
+        </ol>
+        <p class="small" style="margin-top:20px">Нужен Chrome. Не получается? <a href="../">Открой приложение в браузере</a> — всё работает и так.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 7. Что видно всем -->
+<section class="sec" id="privacy">
+  <div class="in">
+    <h2>Твои данные — под контролем</h2>
+    <div class="two">
+      <div class="card"><span class="eyebrow">Видно всем, как на сайте лиги</span><span class="row">Имя и фамилия, игровой номер, команда</span><span class="row">Статистика в протоколах и рейтингах</span><span class="row">Фото из галереи матча</span></div>
+      <div class="card"><span class="eyebrow">Не видно никому</span><span class="row">Телефон</span><span class="row">Дата рождения</span><span class="row">Твои настройки и уведомления</span></div>
+    </div>
+    <p class="small">Не хочешь светить фамилию? Включи режим «номер и инициалы» — статистика останется в протоколах.</p>
+    <!-- TODO: ссылка на страницу политики ПДн (152-ФЗ), когда она появится (экран About) -->
+    <div><a class="btn btn-ghost" href="#privacy" style="padding:0;height:44px;font:500 15px var(--font-sans)">Политика обработки персональных данных</a></div>
+  </div>
+</section>
+
+<!-- 8. Вопросы и ответы -->
+<section class="sec" id="faq">
+  <div class="in">
+    <h2>Вопросы и ответы</h2>
+    <div class="faq">
+      <details><summary><span>Это бесплатно?</span><svg class="ico chev"><use href="#i-chev"/></svg></summary><p>Да. Без рекламы и платной статистики — ни сейчас, ни потом.</p></details>
+      <details><summary><span>Почему его нет в App Store и Google Play?</span><svg class="ico chev"><use href="#i-chev"/></svg></summary><p>Это веб-приложение: ставится прямо с этой страницы и работает как обычное. Так оно сразу доступно и на iPhone, и на Android.</p></details>
+      <details><summary><span>Я играю за две команды. Что увижу?</span><svg class="ico chev"><use href="#i-chev"/></svg></summary><p>Игры всех твоих команд в одном списке. Если две игры пересекаются или стоят впритык — предупредим.</p></details>
+      <details><summary><span>Можно следить за другой командой?</span><svg class="ico chev"><use href="#i-chev"/></svg></summary><p>Да. Нажми «Следить» на странице команды или игрока — соперника, друга, команды ребёнка. Их игры появятся в «Моих играх» с подписью команды.</p></details>
+      <details><summary><span>Моей команды нет в списке</span><svg class="ico chev"><use href="#i-chev"/></svg></summary><p>Команды берутся из заявок в MTGame: в заявку добавляет капитан. Если другой капитан завёл тебя отдельной записью, найди её и нажми «Это моя вторая запись» — команды и статистика сложатся.</p></details>
+      <details><summary><span>Как я узнаю расписание тура?</span><svg class="ico chev"><use href="#i-chev"/></svg></summary><p>Когда лига утвердит расписание, в Telegram придёт сообщение с твоими играми: дата, время, зал и соперник. Данные обновляются каждые 30 минут. После утверждения игры не переносятся. Если две команды всё же договорились о другом времени, придёт отдельное сообщение.</p></details>
+      <details><summary><span>В зале нет связи — что тогда?</span><svg class="ico chev"><use href="#i-chev"/></svg></summary><p>Карточка ближайшей игры откроется и без интернета: время, зал, форма. Рядом будет видно, когда данные обновлялись.</p></details>
+      <details><summary><span>Есть живой счёт во время матча?</span><svg class="ico chev"><use href="#i-chev"/></svg></summary><p>Пока счёт обновляется каждые 30 минут. Живой счёт — следующее большое обновление.</p></details>
+      <details><summary><span>Я капитан. Что есть для меня?</span><svg class="ico chev"><use href="#i-chev"/></svg></summary><p>Сейчас — всё, что у игроков. Скинь ссылку команде: им больше не придётся спрашивать в чате, когда игра. Следом появится вкладка «Капитан»: кто отметился на игру, напоминание в Telegram, цвет формы и быстрый переход к оплате на сайте ABL и к составу в MTGame.</p></details>
+      <details><summary><span>Это официальное приложение ABL?</span><svg class="ico chev"><use href="#i-chev"/></svg></summary><p>Да, это официальное приложение лиги. Данные — те же, что на ablforpeople.com.</p></details>
+    </div>
+  </div>
+</section>
+
+<!-- 9. Ещё нет команды? -->
+<section class="sec quiet" id="no-team">
+  <div class="in">
+    <span class="eyebrow">Ещё нет команды?</span>
+    <p class="body" style="color:var(--text-default)">Хочешь играть в ABL? Расскажем про дивизионы и поможем найти команду.</p>
+    <div><a class="btn btn-secondary" href="https://ablforpeople.com" target="_blank" rel="noopener" data-ev="no_team_click">На сайт лиги</a></div>
+  </div>
+</section>
+
+<!-- 10. Финальный призыв -->
+<section class="sec" id="final">
+  <div class="in">
+    <h2 style="font-size:clamp(28px,7.4vw,40px)">Следующая игра уже в расписании</h2>
+    <div class="ctas"><a class="btn btn-primary" href="#install" data-install>Установить приложение</a><a class="btn btn-ghost" href="../" data-ev="open_in_browser_click">Открыть в браузере</a></div>
+  </div>
+</section>
+</main>
+
+<footer class="foot">
+  <div class="in" style="gap:16px">
+    <div class="foot-brand"><img src="../icons/round_mark.svg" alt=""><span class="small">ABL — любительская лига профессионального уровня · Pro Omni Populo</span></div>
+    <nav>
+      <a href="https://ablforpeople.com" target="_blank" rel="noopener">Сайт лиги</a>
+      <a href="#privacy">Политика обработки персональных данных</a>
+      <!-- TODO: контакт лиги (Telegram / почта) — открытый вопрос 5 в ia/landing.md -->
+      <a href="https://ablforpeople.com" target="_blank" rel="noopener">Связаться с лигой</a>
+      <a href="#" data-share>Поделиться</a>
+    </nav>
+    <span class="small" style="font-size:12px">Данные — MTGame<span data-updated></span></span>
+  </div>
+</footer>
+
+<!-- Шторка установки -->
+<div class="scrim" id="scrim" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="sheet-grip"></div>
+    <div class="sheet-h"><span id="sheet-title">Установка на телефон</span><button class="iconbtn" type="button" aria-label="Закрыть" data-close><svg class="ico"><use href="#i-close"/></svg></button></div>
+    <div class="sheet-b" id="sheet-body"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" aria-live="polite" hidden><div></div></div>
+
+<script>
+(() => {
+  // Свой вход (F01, решено 11.11.2026): Telegram, запасной — SMS. false → шаги «Как начать» без входа: «найди себя» (демо).
+  const LOGIN_BY_PHONE = true;
+  const APP_URL = new URL("../", location.href).href;           // корень приложения
+  const PAGE_URL = location.origin + location.pathname;          // ссылка на лендинг без параметров
+  const SHARE_TEXT = "Поставьте приложение ABL — там наши игры, расписание тура приходит в Telegram, после игры статистика. Бесплатно: " + PAGE_URL;
+
+  // ---------- Аналитика: события воронки (ТЗ §2). Инструмент не выбран — пока копим в window.ablEvents ----------
+  const q = new URLSearchParams(location.search);
+  const from = q.get("from") || "chat";
+  window.ablEvents = window.ablEvents || [];
+  const track = (name, data) => window.ablEvents.push({ name, from, at: Date.now(), ...data });
+
+  // ---------- Окружение (ТЗ §6.1). ?os= и ?inapp=1 — для проверки вариантов на компьютере ----------
+  const ua = navigator.userAgent;
+  const inappName = /Telegram/i.test(ua) ? "Telegram" : /VKClient|vkontakte/i.test(ua) ? "VK" : /Instagram|FBAN|FBAV/i.test(ua) ? "Instagram" : null;
+  const inapp = q.get("inapp") === "1" || !!inappName;
+  const isIOS = /iPhone|iPad|iPod/i.test(ua);
+  const os = q.get("os") || (isIOS ? (/CriOS|FxiOS|EdgiOS|YaBrowser/i.test(ua) ? "ios-other" : "ios") : /Android/i.test(ua) ? "android" : "desktop");
+  const loggedIn = q.get("session") === "1" || !!localStorage.getItem("abl.me");
+  track("landing_view", { os, inapp });
+
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+
+  // Масштаб рамок телефона
+  $$(".device").forEach((d) => {
+    const s = +d.dataset.scale || 0.6, h = +d.dataset.height || 812;
+    d.style.width = 375 * s + "px"; d.style.height = h * s + "px";
+    d.querySelector(".device-in").style.transform = "scale(" + s + ")";
+  });
+
+  // ---------- Тост ----------
+  let toastT;
+  const flash = (m) => { const t = $("#toast"); t.firstElementChild.textContent = m; t.hidden = false; clearTimeout(toastT); toastT = setTimeout(() => (t.hidden = true), 2200); };
+  const copy = (text = PAGE_URL, msg = "Ссылка скопирована") => {
+    const done = () => flash(msg);
+    if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, () => prompt("Скопируй ссылку:", text));
+    else prompt("Скопируй ссылку:", text);
+  };
+  const share = () => {
+    track("share_click");
+    if (navigator.share) navigator.share({ text: SHARE_TEXT }).catch(() => {});
+    else copy(SHARE_TEXT, "Текст скопирован");
+  };
+  document.addEventListener("click", (e) => {
+    const c = e.target.closest("[data-copy]"); if (c) { e.preventDefault(); track("copy_link_click"); copy(); }
+    const s = e.target.closest("[data-share]"); if (s) { e.preventDefault(); share(); }
+    const ev = e.target.closest("[data-ev]"); if (ev) track(ev.dataset.ev);
+  });
+
+  // ---------- Вошёл раньше ----------
+  if (loggedIn) $("#logged").hidden = false;
+
+  // ---------- Встроенный браузер: плашка + главная кнопка «Открыть в браузере» (копирует ссылку) ----------
+  if (inapp) {
+    track("inapp_browser_detected", { app: inappName || "test" });
+    const b = $("#inapp"); b.hidden = false;
+    $("#inapp-t").textContent = "Из " + (inappName || "Telegram") + " приложение не установить";
+    $("#inapp-d").textContent = "Открой эту страницу в " + (os === "android" ? "Chrome" : "Safari") + ": ⋯ → «Открыть в браузере»";
+    $("#hero-browser").hidden = true;
+  }
+
+  // ---------- Варианты по источнику (ТЗ §6.2) ----------
+  if (from === "qr") { $("#hero-sub").textContent = "Ставится за минуту, пока разминаешься"; $("#hero-browser").hidden = true; }
+  if (from === "captain") { $("#captain").hidden = false; $("#share-text-view").textContent = "«" + SHARE_TEXT + "»"; }
+  if (from === "story") $("#no-team-story-slot").replaceWith($("#no-team"));
+
+  // ---------- Шаги «Как начать» без входа по телефону ----------
+  if (!LOGIN_BY_PHONE) {
+    $("#s2-t").textContent = "Найди себя"; $("#s2-d").textContent = "По фамилии — во всех командах лиги. Пароль от MTGame не нужен";
+    $("#s3-t").textContent = "Включи уведомления"; $("#s3-d").textContent = "Добавь игры в календарь и подключи Telegram";
+  }
+
+  // ---------- Инструкция: вкладки, платформа по умолчанию ----------
+  const setTab = (root, name) => {
+    $$("[data-tab]", root).forEach((t) => t.setAttribute("aria-selected", String(t.dataset.tab === name)));
+    $$("[data-pane]", root).forEach((p) => (p.hidden = p.dataset.pane !== name));
+  };
+  const initGuide = (root) => {
+    setTab(root, os === "android" ? "android" : "ios");
+    $$("[data-ios-other]", root).forEach((b) => (b.hidden = os !== "ios-other"));
+    root.addEventListener("click", (e) => { const t = e.target.closest("[data-tab]"); if (t) setTab(root, t.dataset.tab); });
+  };
+  initGuide($("#guide"));
+
+  // ---------- Шторка установки ----------
+  const scrim = $("#scrim");
+  const sheetBody = $("#sheet-body");
+  const guideClone = $("#guide").cloneNode(true); guideClone.removeAttribute("id");
+  sheetBody.append(guideClone); initGuide(guideClone);
+  let lastFocus = null;
+  const openSheet = () => { lastFocus = document.activeElement; scrim.hidden = false; track("install_sheet_open", { os }); $("[data-close]", scrim).focus(); };
+  const closeSheet = () => { scrim.hidden = true; lastFocus && lastFocus.focus(); };
+  scrim.addEventListener("click", (e) => { if (e.target === scrim || e.target.closest("[data-close]")) closeSheet(); });
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !scrim.hidden) closeSheet(); });
+
+  // Android: системный запрос установки, если браузер его дал
+  let deferred = null;
+  addEventListener("beforeinstallprompt", (e) => { e.preventDefault(); deferred = e; });
+  addEventListener("appinstalled", () => { track("appinstalled"); flash("Готово — иконка ABL на главном экране"); });
+
+  $$("[data-install]").forEach((b) => {
+    if (inapp) b.textContent = b.closest(".hero") ? "Открыть в браузере" : b.textContent;
+    b.addEventListener("click", (e) => {
+      track("cta_install_click", { place: b.closest("section")?.id || "hero" });
+      if (inapp) { e.preventDefault(); copy(); return; }                 // из Telegram/VK установить нельзя — даём ссылку
+      if (deferred) { e.preventDefault(); deferred.prompt(); deferred.userChoice.finally(() => (deferred = null)); return; }
+      if (os === "desktop") return;                                       // на компьютере — просто к блоку установки
+      e.preventDefault(); openSheet();
+    });
+  });
+
+  // ---------- Данные лиги: время обновления и ближайшие игры (из снимка MTGame в ../data) ----------
+  const TZ = "Europe/Moscow";
+  const fmtTime = (d) => d.toLocaleTimeString("ru-RU", { timeZone: TZ, hour: "2-digit", minute: "2-digit" });
+  const fmtUpdated = (d) => {
+    const day = (x) => x.toLocaleDateString("ru-RU", { timeZone: TZ });
+    const now = new Date(), yest = new Date(now - 864e5);
+    const when = day(d) === day(now) ? "сегодня" : day(d) === day(yest) ? "вчера" : d.toLocaleDateString("ru-RU", { timeZone: TZ, day: "numeric", month: "long" });
+    return " · обновлено " + when + " в " + fmtTime(d);
+  };
+  fetch("../data/league.json").then((r) => r.json()).then(async (league) => {
+    const teams = await Promise.all(league.teams.map((t) => fetch("../data/t/" + t.id + "/team.json").then((r) => r.json()).catch(() => null)));
+    const ok = teams.filter(Boolean);
+    const updated = ok.map((t) => t.generated_at).filter(Boolean).sort().pop();
+    if (updated) $$("[data-updated]").forEach((s) => (s.textContent = fmtUpdated(new Date(updated))));
+    const now = Date.now(), seen = new Set(), games = [];
+    ok.forEach((t) => (t.games || []).forEach((g) => {
+      if (g.status === "closed" || new Date(g.datetime) < now || seen.has(g.id)) return;
+      seen.add(g.id);
+      games.push({ at: new Date(g.datetime), title: (g.home ? g.us.name + " — " + g.them.name : g.them.name + " — " + g.us.name), sub: [g.tournament_name, g.venue].filter(Boolean).join(" · ") });
+    }));
+    games.sort((a, b) => a.at - b.at);
+    const top = games.slice(0, 3);
+    if (!top.length) return;
+    const day = (d) => d.toLocaleDateString("ru-RU", { timeZone: TZ, weekday: "short", day: "numeric", month: "long" });
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+    $("#games-list").innerHTML = top.map((g) => '<div class="li"><span class="li-time">' + fmtTime(g.at) + '</span><span class="li-b"><span class="li-t">' + esc(g.title) + '</span><span class="li-s">' + esc(day(g.at) + " · " + g.sub) + "</span></span></div>").join("");
+    $("#games").hidden = false;
+  }).catch(() => {});   // данные не загрузились — числа остаются статичными, без «обновлено» и без игр (ТЗ §5, блок 4)
+
+  // Service worker приложения: нужен, чтобы Chrome предложил установку прямо с лендинга
+  if ("serviceWorker" in navigator) navigator.serviceWorker.register("../sw.js").catch(() => {});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,78 @@
+# GitHub Actions для репозитория демо (копируется в .github/workflows/ скриптом deploy_demo.sh).
+# Каждые 30 минут выгружает свежий снимок данных ABL из API MTGame и публикует его, если данные изменились.
+name: Обновление данных ABL
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+    inputs:
+      telegram_test:
+        description: "Отправить тестовое сообщение в Telegram"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # Кэш сырых ответов API между запусками: история прошлых сезонов не скачивается каждый раз.
+      - uses: actions/cache@v4
+        with:
+          path: .tmp/mtgame_cache
+          key: mtgame-${{ github.run_id }}
+          restore-keys: mtgame-
+
+      # Уже отправленные напоминания капитану (оплата, заявка): чтобы не слать их каждые 30 минут.
+      - uses: actions/cache@v4
+        with:
+          path: .tmp/notify_state.json
+          key: notify-${{ github.run_id }}
+          restore-keys: notify-
+
+      - run: pip install requests python-dotenv
+
+      - name: Снимок данных до обновления (для уведомлений)
+        # Команда по умолчанию (для её канала уведомлений) — из индекса data/league.json
+        run: |
+          mkdir -p .tmp
+          TEAM=$(python -c "import json;print(json.load(open('data/league.json'))['default_team_id'])" 2>/dev/null || echo 946)
+          echo "ABL_TEAM=$TEAM" >> "$GITHUB_ENV"
+          cp "data/t/$TEAM/team.json" .tmp/prev_team.json || true
+
+      - name: Выгрузка данных
+        run: python tools/fetch_abl_data.py
+        env:
+          ABL_OUT_DIR: data
+
+      - name: Публикация, если данные изменились
+        run: |
+          git config user.name "ABL data bot"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data
+          if git diff --cached --quiet; then echo "Данные не изменились"; exit 0; fi
+          git commit -m "Данные MTGame: $(date -u +'%Y-%m-%d %H:%M') UTC"
+          git push
+
+      # Уведомления в Telegram — после публикации, чтобы ссылки вели на обновлённый сайт.
+      # Без секретов TELEGRAM_BOT_TOKEN и TELEGRAM_CHAT_ID скрипт только печатает события в лог.
+      - name: Уведомления в Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SITE_URL: https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}/
+        run: python tools/notify_telegram.py --prev .tmp/prev_team.json --new data/t/${{ env.ABL_TEAM }}/team.json --state .tmp/notify_state.json ${{ inputs.telegram_test && '--test' || '' }}
